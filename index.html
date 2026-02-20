@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PromptLibss — AI Prompt Kütüphanesi</title>
+
+<!-- OG / Share Preview -->
+<meta property="og:title" content="PromptLibss — AI Prompt Kütüphanesi">
+<meta property="og:description" content="Görsel üretimden vibe coding'e, içerik yazmaya — değişken destekli hazır prompt şablonları.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;600;700;800;900&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0c0c0c;
+  --bg2:     #141414;
+  --bg3:     #1c1c1c;
+  --bg4:     #242424;
+  --bg5:     #2c2c2c;
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.11);
+  --border3: rgba(255,255,255,0.18);
+  --text:    #efefef;
+  --text2:   #888;
+  --text3:   #4a4a4a;
+  --r:       12px;
+  --r2:      8px;
+  --pill:    999px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Instrument Sans', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  background: rgba(12,12,12,0.88);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--border);
+  height: 58px; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo { font-family: 'Cabinet Grotesk', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -0.3px; color: #fff; cursor: pointer; }
+.logo span { color: var(--text3); font-weight: 500; }
+.nav-r { display: flex; align-items: center; gap: 8px; }
+
+.pb {
+  background: none; border: 1px solid var(--border2); color: var(--text2);
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 500;
+  padding: 7px 15px; border-radius: var(--pill); cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.pb:hover { border-color: var(--border3); color: var(--text); background: var(--bg3); }
+.pb.primary { background: #fff; color: #000; border-color: #fff; }
+.pb.primary:hover { background: #e8e8e8; }
+.pb.danger { border-color: rgba(255,60,60,0.3); color: #ff6b6b; }
+.pb.danger:hover { background: rgba(255,60,60,0.08); }
+
+/* avatar */
+.avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--bg4); border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; cursor: pointer; overflow: hidden;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ── LANG TOGGLE ── */
+.lang-btn {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: var(--pill); padding: 4px; display: flex; gap: 2px;
+}
+.lang-opt {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px;
+  padding: 4px 10px; border-radius: var(--pill); cursor: pointer;
+  color: var(--text3); transition: all .15s;
+}
+.lang-opt.active { background: var(--bg5); color: var(--text); }
+
+/* ── CATEGORIES TOP BAR ── */
+.cats-bar {
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  display: flex; align-items: center; gap: 6px;
+  overflow-x: auto; scrollbar-width: none;
+  height: 50px;
+}
+.cats-bar::-webkit-scrollbar { display: none; }
+
+.cat-pill {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 7px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--pill); padding: 7px 16px;
+  font-size: 13px; font-weight: 500; color: var(--text2);
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.cat-pill:hover { border-color: var(--border2); color: var(--text); }
+.cat-pill.active { background: #fff; color: #000; border-color: #fff; }
+.cat-pill .cp-icon { font-size: 15px; }
+.cat-pill .cp-count {
+  font-size: 10px; font-weight: 600;
+  background: rgba(0,0,0,0.15); color: inherit;
+  padding: 1px 6px; border-radius: var(--pill); opacity: 0.6;
+}
+.cat-pill.active .cp-count { background: rgba(0,0,0,0.12); }
+
+/* ── HERO ── */
+.hero {
+  max-width: 760px; margin: 0 auto;
+  padding: 80px 24px 64px;
+  text-align: center;
+}
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; color: var(--text2);
+  background: var(--bg2); border: 1px solid var(--border2);
+  padding: 5px 14px; border-radius: var(--pill); margin-bottom: 28px;
+}
+.hero-badge::before { content:''; width:7px; height:7px; background:#4ade80; border-radius:50%; }
+
+.hero h1 {
+  font-family: 'Cabinet Grotesk', sans-serif;
+  font-size: clamp(40px, 7vw, 72px); font-weight: 900;
+  letter-spacing: -2.5px; line-height: 1.02; color: #fff; margin-bottom: 18px;
+}
+.hero h1 .dim { color: var(--text3); }
+.hero-sub { font-size: 15px; color: var(--text2); line-height: 1.7; margin-bottom: 36px; max-width: 480px; margin-left: auto; margin-right: auto; }
+
+/* search */
+.search-wrap {
+  position: relative; max-width: 520px; margin: 0 auto 40px;
+  display: flex; gap: 8px;
+}
+.search-wrap input {
+  flex: 1; background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--r); color: var(--text);
+  font-family: 'Instrument Sans', sans-serif; font-size: 14px;
+  padding: 13px 16px; outline: none; transition: border-color .15s;
+}
+.search-wrap input:focus { border-color: var(--border3); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-wrap button { flex-shrink: 0; }
+
+/* stats */
+.stats-row {
+  display: inline-flex; border: 1px solid var(--border); border-radius: var(--r); overflow: hidden;
+}
+.stat { padding: 12px 28px; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-n { font-family: 'Cabinet Grotesk', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; color: #fff; }
+.stat-l { font-size: 11px; color: var(--text3); letter-spacing: 0.3px; margin-top: 1px; }
+
+/* ── MAIN ── */
+.main { max-width: 1200px; margin: 0 auto; padding: 32px 24px 100px; }
+
+/* section header */
+.sec-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.sec-title {
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Cabinet Grotesk', sans-serif; font-size: 18px; font-weight: 700; color: #fff;
+}
+.sec-title .si { font-size: 20px; }
+
+/* subcats */
+.sub-scroll {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px;
+}
+.stab {
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text2); font-size: 12px; font-weight: 500;
+  padding: 5px 13px; border-radius: var(--pill); cursor: pointer; transition: all .15s;
+}
+.stab:hover { border-color: var(--border2); color: var(--text); }
+.stab.active { background: var(--bg4); color: var(--text); border-color: var(--border3); }
+
+/* grid */
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+  gap: 10px; margin-bottom: 48px;
+}
+
+/* card */
+.pcard {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 18px;
+  cursor: pointer; transition: all .18s; position: relative;
+}
+.pcard:hover { border-color: var(--border2); background: var(--bg3); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0,0,0,0.25); }
+.pcard-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 11px; }
+.pcard-sub {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+  color: var(--text3); background: var(--bg3); border: 1px solid var(--border);
+  padding: 3px 9px; border-radius: var(--pill);
+}
+.pcard-actions { display: flex; gap: 6px; align-items: center; }
+.icon-btn {
+  background: none; border: none; color: var(--text3); font-size: 15px;
+  cursor: pointer; transition: color .15s; padding: 2px; line-height: 1;
+}
+.icon-btn:hover { color: var(--text); }
+.icon-btn.active { color: #fff; }
+.pcard-title { font-family: 'Cabinet Grotesk', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; line-height: 1.3; }
+.pcard-prev {
+  font-size: 11.5px; color: var(--text2); line-height: 1.65;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  margin-bottom: 14px;
+}
+.pcard-prev .vt { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.07); padding: 1px 5px; border-radius: 4px; font-size: 10px; font-family: monospace; }
+.pcard-foot { display: flex; align-items: center; justify-content: space-between; }
+.pcard-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; }
+.copy-pill {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text2);
+  font-family: 'Instrument Sans', sans-serif; font-size: 11px; font-weight: 500;
+  padding: 5px 13px; border-radius: var(--pill); cursor: pointer; transition: all .15s;
+}
+.copy-pill:hover { border-color: var(--border3); color: var(--text); }
+.copy-pill.done { color: var(--text3); }
+
+/* ── MODAL ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.82); backdrop-filter: blur(10px);
+  z-index: 400; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 18px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto;
+  animation: mIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes mIn { from { opacity:0; transform: scale(.95) translateY(12px); } to { opacity:1; transform: none; } }
+
+.mhead { padding: 22px 22px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+.mhead-info {}
+.mcat-l { font-size: 11px; color: var(--text3); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 5px; }
+.mtitle { font-family: 'Cabinet Grotesk', sans-serif; font-size: 20px; font-weight: 800; color: #fff; }
+.mclose {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text2); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0;
+}
+.mclose:hover { background: var(--bg4); color: var(--text); }
+
+.mbody { padding: 18px 22px 22px; }
+.vars-hd { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text3); margin-bottom: 12px; }
+.vgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.vf label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 5px; }
+.vf input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--r2); color: var(--text);
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px;
+  padding: 9px 12px; outline: none; transition: border-color .15s;
+}
+.vf input:focus { border-color: var(--border3); }
+.vf input::placeholder { color: var(--text3); }
+
+.pout {
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--r2);
+  padding: 16px; font-size: 12.5px; color: var(--text2); line-height: 1.8;
+  min-height: 100px; white-space: pre-wrap; margin-bottom: 14px; font-family: monospace;
+}
+.pout .filled { color: #fff; font-weight: 600; }
+
+.mactions { display: flex; gap: 8px; justify-content: space-between; align-items: center; }
+.mactions-l { display: flex; gap: 8px; }
+.mactions-r { display: flex; gap: 8px; }
+.btn-share {
+  background: none; border: 1px solid var(--border2); color: var(--text2);
+  font-family: 'Instrument Sans', sans-serif; font-size: 12px; font-weight: 500;
+  padding: 9px 16px; border-radius: var(--pill); cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-share:hover { border-color: var(--border3); color: var(--text); }
+.btn-copy-full {
+  background: #fff; color: #000; border: none;
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 10px 22px; border-radius: var(--pill); cursor: pointer; transition: background .15s;
+}
+.btn-copy-full:hover { background: #e0e0e0; }
+.btn-ghost {
+  background: none; border: 1px solid var(--border2); color: var(--text2);
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px; padding: 10px 16px;
+  border-radius: var(--pill); cursor: pointer; transition: all .15s;
+}
+.btn-ghost:hover { border-color: var(--border3); color: var(--text); }
+
+/* ── AUTH MODAL ── */
+.auth-modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 18px; max-width: 380px; width: 100%;
+  padding: 36px 32px; text-align: center;
+  animation: mIn .2s cubic-bezier(.34,1.56,.64,1);
+}
+.auth-modal h3 { font-family: 'Cabinet Grotesk', sans-serif; font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.auth-modal p { font-size: 14px; color: var(--text2); line-height: 1.6; margin-bottom: 28px; }
+.google-btn {
+  width: 100%; background: #fff; color: #000; border: none;
+  font-family: 'Instrument Sans', sans-serif; font-size: 14px; font-weight: 600;
+  padding: 13px 20px; border-radius: var(--r); cursor: pointer; transition: background .15s;
+  display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 12px;
+}
+.google-btn:hover { background: #f0f0f0; }
+.google-btn svg { width: 18px; height: 18px; }
+.auth-skip { font-size: 12px; color: var(--text3); cursor: pointer; }
+.auth-skip:hover { color: var(--text2); }
+
+/* ── ADMIN PANEL ── */
+.admin-panel {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: var(--bg); overflow-y: auto;
+}
+.admin-panel.open { display: block; }
+.admin-nav {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between;
+}
+.admin-title { font-family: 'Cabinet Grotesk', sans-serif; font-size: 16px; font-weight: 800; color: #fff; }
+.admin-body { max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+.admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+.astat {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 20px; text-align: center;
+}
+.astat-n { font-family: 'Cabinet Grotesk', sans-serif; font-size: 28px; font-weight: 800; color: #fff; }
+.astat-l { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+.admin-section-title { font-family: 'Cabinet Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+
+/* prompt form */
+.pform { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 24px; margin-bottom: 24px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.fg { display: flex; flex-direction: column; gap: 6px; }
+.fg label { font-size: 12px; color: var(--text2); font-weight: 500; }
+.fg input, .fg select, .fg textarea {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px;
+  padding: 9px 12px; border-radius: var(--r2); outline: none; transition: border-color .15s;
+}
+.fg textarea { resize: vertical; min-height: 100px; }
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: var(--border3); }
+.fg input::placeholder, .fg textarea::placeholder { color: var(--text3); }
+.fg select option { background: var(--bg3); }
+
+/* prompt list */
+.prompt-list { display: flex; flex-direction: column; gap: 8px; }
+.plist-item {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r2);
+  padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;
+}
+.plist-info {}
+.plist-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.plist-meta { font-size: 11px; color: var(--text3); }
+.plist-actions { display: flex; gap: 6px; }
+
+/* share page */
+.share-page {
+  display: none; position: fixed; inset: 0; z-index: 600;
+  background: var(--bg); overflow-y: auto;
+}
+.share-page.open { display: block; }
+.share-content { max-width: 640px; margin: 0 auto; padding: 60px 24px; }
+.share-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text3); background: var(--bg2); border: 1px solid var(--border); padding: 5px 12px; border-radius: var(--pill); margin-bottom: 24px; }
+.share-title { font-family: 'Cabinet Grotesk', sans-serif; font-size: 32px; font-weight: 900; letter-spacing: -1px; color: #fff; margin-bottom: 12px; }
+.share-cat { font-size: 13px; color: var(--text2); margin-bottom: 32px; }
+.share-prompt-box { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r); padding: 24px; font-size: 13px; line-height: 1.8; color: var(--text2); font-family: monospace; white-space: pre-wrap; margin-bottom: 24px; }
+.share-prompt-box .vt { color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.07); padding: 2px 6px; border-radius: 4px; }
+.share-actions { display: flex; gap: 10px; margin-bottom: 40px; }
+.share-cta { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--r); padding: 20px 24px; display: flex; align-items: center; justify-content: space-between; }
+.share-cta-text { font-size: 14px; color: var(--text2); }
+.share-cta-text strong { color: var(--text); display: block; font-size: 15px; margin-bottom: 4px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(10px);
+  background: rgba(255,255,255,0.95); color: #000;
+  font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 10px 22px; border-radius: var(--pill);
+  z-index: 9999; opacity: 0; transition: all .2s; pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── EMPTY ── */
+.empty { padding: 60px; text-align: center; color: var(--text3); font-size: 13px; grid-column: 1/-1; }
+
+/* ── LOADING ── */
+.spin-overlay { display:none; position:fixed; inset:0; background:rgba(12,12,12,.7); backdrop-filter:blur(4px); z-index:700; align-items:center; justify-content:center; }
+.spin-overlay.show { display:flex; }
+.spin { width:32px; height:32px; border:2px solid var(--border2); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+@media (max-width:600px) {
+  .vgrid, .form-grid { grid-template-columns: 1fr; }
+  .admin-stats { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="logo" onclick="goHome()">prompt<span>libss</span></div>
+  <div class="nav-r">
+    <div class="lang-btn">
+      <div class="lang-opt active" id="langTR" onclick="setLang('tr')">TR</div>
+      <div class="lang-opt" id="langEN" onclick="setLang('en')">EN</div>
+    </div>
+    <div id="navAuth">
+      <button class="pb" onclick="showAuthModal()">
+        <span id="navAuthLabel">Giriş Yap</span>
+      </button>
+    </div>
+    <div id="navUser" style="display:none; align-items:center; gap:8px;">
+      <div class="avatar" id="userAvatar" onclick="toggleUserMenu()">👤</div>
+    </div>
+  </div>
+</nav>
+
+<!-- CATEGORIES BAR -->
+<div class="cats-bar" id="catsBar"></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge" id="heroBadge">AI Prompt Kütüphanesi</div>
+  <h1 id="heroTitle">En iyi promptlar,<br><span class="dim">hepsi burada.</span></h1>
+  <p class="hero-sub" id="heroSub">Görsel üretimden vibe coding'e, içerik yazmaya — değişken destekli, hazır şablonlar.</p>
+  <div class="search-wrap">
+    <input type="text" id="searchInput" oninput="handleSearch()">
+    <button class="pb primary" id="searchBtn" onclick="handleSearch()">Ara</button>
+  </div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-n" id="statTotal">—</div><div class="stat-l" id="statTotalL">toplam prompt</div></div>
+    <div class="stat"><div class="stat-n">3</div><div class="stat-l" id="statCatL">kategori</div></div>
+    <div class="stat"><div class="stat-n" id="statFavs">0</div><div class="stat-l" id="statFavL">favori</div></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="mainContent"></div>
+
+<!-- PROMPT MODAL -->
+<div class="overlay" id="overlay" onclick="overlayClick(event)">
+  <div class="modal" id="modal">
+    <div class="mhead">
+      <div class="mhead-info">
+        <div class="mcat-l" id="mCat"></div>
+        <div class="mtitle" id="mTitle"></div>
+      </div>
+      <button class="mclose" onclick="closeModal()">✕</button>
+    </div>
+    <div class="mbody">
+      <div id="varsWrap">
+        <div class="vars-hd" id="varsHd">değişkenleri doldur</div>
+        <div class="vgrid" id="vGrid"></div>
+      </div>
+      <div class="pout" id="pOut"></div>
+      <div class="mactions">
+        <div class="mactions-l">
+          <button class="btn-share" onclick="sharePrompt()">🔗 <span id="shareBtnTxt">Paylaş</span></button>
+        </div>
+        <div class="mactions-r">
+          <button class="btn-ghost" onclick="closeModal()" id="closeBtnTxt">Kapat</button>
+          <button class="btn-copy-full" onclick="copyFull()" id="copyBtnTxt">↗ Kopyala</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="overlay" id="authOverlay" onclick="authOverlayClick(event)">
+  <div class="auth-modal">
+    <div style="font-size:32px; margin-bottom:16px;">🔐</div>
+    <h3 id="authTitle">Devam etmek için giriş yap</h3>
+    <p id="authDesc">Favorileri kaydetmek ve promptları kişiselleştirmek için Google hesabınla devam et.</p>
+    <button class="google-btn" onclick="signInGoogle()">
+      <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Google ile Giriş Yap
+    </button>
+    <div class="auth-skip" onclick="closeAuthModal()" id="authSkip">Şimdi değil</div>
+  </div>
+</div>
+
+<!-- SHARE PAGE -->
+<div class="share-page" id="sharePage">
+  <div class="share-content">
+    <button class="pb" onclick="closeSharePage()" style="margin-bottom:24px;">← <span id="shareBackTxt">Geri dön</span></button>
+    <div class="share-badge" id="shareBadge"></div>
+    <div class="share-title" id="shareTitle"></div>
+    <div class="share-cat" id="shareCatTxt"></div>
+    <div class="share-prompt-box" id="sharePromptBox"></div>
+    <div class="share-actions">
+      <button class="btn-copy-full" onclick="copySharePrompt()" id="shareCopyTxt">↗ Kopyala</button>
+      <button class="btn-share" onclick="copyShareLink()">🔗 <span id="shareLinkTxt">Linki Kopyala</span></button>
+    </div>
+    <div class="share-cta">
+      <div class="share-cta-text">
+        <strong id="shareCtaTitle">Daha fazla prompt keşfet</strong>
+        <span id="shareCtaDesc">PromptLibss'te yüzlerce hazır şablon seni bekliyor.</span>
+      </div>
+      <button class="pb primary" onclick="closeSharePage()">Keşfet →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-panel" id="adminPanel">
+  <div class="admin-nav">
+    <div class="admin-title">⚙ Admin Panel</div>
+    <div style="display:flex;gap:8px;">
+      <button class="pb" onclick="closeAdmin()">← Siteye Dön</button>
+      <button class="pb danger" onclick="signOut()">Çıkış</button>
+    </div>
+  </div>
+  <div class="admin-body">
+    <div class="admin-stats" id="adminStats"></div>
+
+    <div class="admin-section-title">Yeni Prompt Ekle</div>
+    <div class="pform">
+      <div class="form-grid">
+        <div class="fg"><label>Başlık (TR)</label><input type="text" id="fTitle" placeholder="Prompt başlığı..."></div>
+        <div class="fg"><label>Başlık (EN)</label><input type="text" id="fTitleEn" placeholder="Prompt title..."></div>
+      </div>
+      <div class="form-grid">
+        <div class="fg">
+          <label>Ana Kategori</label>
+          <select id="fCat">
+            <option value="visual">🎨 Görsel Üretenler</option>
+            <option value="coding">💻 Vibe Coding</option>
+            <option value="content">✍️ Yazı & İçerik</option>
+          </select>
+        </div>
+        <div class="fg"><label>Alt Kategori (Midjourney, Cursor, SEO...)</label><input type="text" id="fSubCat" placeholder="Midjourney"></div>
+      </div>
+      <div class="fg" style="margin-bottom:12px;">
+        <label>Prompt Şablonu (değişkenler için {degisken_adi} kullan)</label>
+        <textarea id="fTemplate" placeholder="Cinematic portrait of {karakter}, {aydinlatma} lighting..."></textarea>
+      </div>
+      <div class="fg" style="margin-bottom:16px;">
+        <label>Açıklama (TR)</label>
+        <input type="text" id="fDesc" placeholder="Kısa açıklama...">
+      </div>
+      <button class="pb primary" onclick="adminAddPrompt()" style="width:100%; justify-content:center; padding:12px;">
+        + Prompt Ekle
+      </button>
+    </div>
+
+    <div class="admin-section-title">Mevcut Promptlar (<span id="pCount">0</span>)</div>
+    <div class="prompt-list" id="adminPromptList"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="spin-overlay" id="spinOverlay"><div class="spin"></div></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ──────────────────────────────────────────────────────
+// CONFIG — kendi bilgilerini buraya gir
+// ──────────────────────────────────────────────────────
+const SUPABASE_URL     = 'https://gosuyaixcjakayqcvyup.supabase.co';
+const SUPABASE_ANON    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdvc3V5YWl4Y2pha2F5cWN2eXVwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1MzM5MzQsImV4cCI6MjA4NzEwOTkzNH0.tBWygy1RSa7WeoimplBaBqcX_853wYKQILSuyhgALF0';
+const ADMIN_EMAIL      = 'kaptaneren56@gmail.com';  // sadece bu email admin
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ──────────────────────────────────────────────────────
+// I18N
+// ──────────────────────────────────────────────────────
+const T = {
+  tr: {
+    heroBadge: 'AI Prompt Kütüphanesi',
+    heroTitle: 'En iyi promptlar,\nhepsi burada.',
+    heroSub: 'Görsel üretimden vibe coding\'e, içerik yazmaya — değişken destekli, hazır şablonlar.',
+    searchPlaceholder: 'prompt ara...',
+    searchBtn: 'Ara',
+    statTotal: 'toplam prompt',
+    statCat: 'kategori',
+    statFav: 'favori',
+    cats: { all: 'Tümü', visual: '🎨 Görsel Üretenler', coding: '💻 Vibe Coding', content: '✍️ Yazı & İçerik' },
+    catDescs: { visual: 'Midjourney, DALL·E, Flux...', coding: 'Cursor, v0, Bolt...', content: 'Blog, SEO, Sosyal Medya...' },
+    varsHd: 'Değişkenleri Doldur',
+    share: 'Paylaş', close: 'Kapat', copy: '↗ Kopyala',
+    authTitle: 'Devam etmek için giriş yap',
+    authDesc: 'Favorileri kaydetmek için Google hesabınla devam et.',
+    authSkip: 'Şimdi değil',
+    shareBack: '← Geri dön',
+    shareLinkCopied: 'Link kopyalandı ✓',
+    copied: 'Kopyalandı ✓',
+    shareCtaTitle: 'Daha fazla prompt keşfet',
+    shareCtaDesc: 'PromptLibss\'te yüzlerce hazır şablon seni bekliyor.',
+    shareLinkTxt: 'Linki Kopyala',
+    catAllCount: 'prompt',
+  },
+  en: {
+    heroBadge: 'AI Prompt Library',
+    heroTitle: 'The best prompts,\nall in one place.',
+    heroSub: 'From image generation to vibe coding — variable-powered, ready-to-use templates.',
+    searchPlaceholder: 'search prompts...',
+    searchBtn: 'Search',
+    statTotal: 'total prompts',
+    statCat: 'categories',
+    statFav: 'favorites',
+    cats: { all: 'All', visual: '🎨 Image Generation', coding: '💻 Vibe Coding', content: '✍️ Writing & Content' },
+    catDescs: { visual: 'Midjourney, DALL·E, Flux...', coding: 'Cursor, v0, Bolt...', content: 'Blog, SEO, Social Media...' },
+    varsHd: 'Fill in Variables',
+    share: 'Share', close: 'Close', copy: '↗ Copy',
+    authTitle: 'Sign in to continue',
+    authDesc: 'Continue with your Google account to save favorites.',
+    authSkip: 'Not now',
+    shareBack: '← Go back',
+    shareLinkCopied: 'Link copied ✓',
+    copied: 'Copied ✓',
+    shareCtaTitle: 'Explore more prompts',
+    shareCtaDesc: 'Hundreds of ready-made templates await you on PromptLibss.',
+    shareLinkTxt: 'Copy Link',
+    catAllCount: 'prompts',
+  }
+};
+
+// ──────────────────────────────────────────────────────
+// MOCK DATA
+// ──────────────────────────────────────────────────────
+const MOCK = [
+  { id:1, title:'Sinematik Portre', title_en:'Cinematic Portrait', main_cat:'visual', sub_cat:'Midjourney', template:'Cinematic portrait of {character}, {lighting} lighting, shot on {camera}, {style} style, 8k, hyperrealistic', vars:['character','lighting','camera','style'], rating:4.9, uses:3400 },
+  { id:2, title:'Mimari Render', title_en:'Architectural Render', main_cat:'visual', sub_cat:'Midjourney', template:'Ultra-realistic architectural render of {building_type} in {city}, {weather} weather, golden hour, photorealistic, 8k', vars:['building_type','city','weather'], rating:4.8, uses:2100 },
+  { id:3, title:'Karakter Konsept', title_en:'Character Concept', main_cat:'visual', sub_cat:'Stable Diffusion', template:'Character concept art of {description}, {art_style} style, detailed, {color_palette} palette, trending on artstation', vars:['description','art_style','color_palette'], rating:4.7, uses:1890 },
+  { id:4, title:'Ürün Fotoğrafı', title_en:'Product Photo', main_cat:'visual', sub_cat:'DALL-E', template:'Professional product photography of {product}, {background} background, studio lighting, commercial quality, minimalist', vars:['product','background'], rating:4.6, uses:1560 },
+  { id:5, title:'Anime Sahne', title_en:'Anime Scene', main_cat:'visual', sub_cat:'Midjourney', template:'{scene_description}, anime style, {studio} animation studio quality, {atmosphere}, highly detailed, 4k', vars:['scene_description','studio','atmosphere'], rating:4.8, uses:2780 },
+  { id:6, title:'Fantasy Ortam', title_en:'Fantasy Environment', main_cat:'visual', sub_cat:'Flux', template:'Epic fantasy {environment_type}, {atmosphere} atmosphere, volumetric fog, cinematic lighting, ultra detailed, 8k', vars:['environment_type','atmosphere'], rating:4.9, uses:3100 },
+  { id:7, title:'UI Mockup', title_en:'UI Mockup', main_cat:'visual', sub_cat:'DALL-E', template:'Clean {app_type} app UI design mockup, {theme} theme, modern design, glassmorphism, Figma style', vars:['app_type','theme'], rating:4.6, uses:980 },
+  { id:8, title:'Logo Tasarım', title_en:'Logo Design', main_cat:'visual', sub_cat:'Midjourney', template:'Minimalist {brand_name} logo, {color} color scheme, vector style, clean, modern, white background, icon only', vars:['brand_name','color'], rating:4.5, uses:1230 },
+  { id:9, title:'Full-Stack App', title_en:'Full-Stack App', main_cat:'coding', sub_cat:'Cursor', template:'Create a full-stack {app_type} app with {tech_stack}. Include: authentication, database schema, API routes, and a clean responsive UI. Use best practices and add comments.', vars:['app_type','tech_stack'], rating:4.9, uses:4200 },
+  { id:10, title:'React Component', title_en:'React Component', main_cat:'coding', sub_cat:'v0', template:'Build a {component_name} React component with Tailwind CSS. Requirements: {requirements}. Make it accessible, responsive, and add hover/focus states.', vars:['component_name','requirements'], rating:4.8, uses:3100 },
+  { id:11, title:'Bug Hunter', title_en:'Bug Hunter', main_cat:'coding', sub_cat:'Claude', template:'Debug this {language} code. Find all bugs, explain root causes, and provide fixed code with explanations:\n\n```{language}\n{code}\n```', vars:['language','code'], rating:4.9, uses:5600 },
+  { id:12, title:'Landing Page', title_en:'Landing Page', main_cat:'coding', sub_cat:'Bolt', template:'Build a complete landing page for {product_name} ({target_audience} target audience). Include: hero, features, testimonials, pricing, CTA. Use {design_style} design style.', vars:['product_name','target_audience','design_style'], rating:4.8, uses:2900 },
+  { id:13, title:'Database Schema', title_en:'Database Schema', main_cat:'coding', sub_cat:'Cursor', template:'Design an optimal PostgreSQL schema for a {app_description} app. Include: tables, relationships, indexes, RLS policies for Supabase, and seed data.', vars:['app_description'], rating:4.7, uses:1540 },
+  { id:14, title:'API Entegrasyonu', title_en:'API Integration', main_cat:'coding', sub_cat:'Cursor', template:'Write a clean {language} function to integrate with {api_name} API. Handle: auth, errors, rate limiting, TypeScript types. Endpoint: {endpoint}', vars:['language','api_name','endpoint'], rating:4.7, uses:1870 },
+  { id:15, title:'Refactor Expert', title_en:'Refactor Expert', main_cat:'coding', sub_cat:'Claude', template:'Refactor this {language} code for better {goal}. Keep same functionality, add TypeScript types, follow {style_guide} style guide.\n\nCode:\n{code}', vars:['language','goal','style_guide','code'], rating:4.8, uses:2340 },
+  { id:16, title:'Test Yazıcı', title_en:'Test Writer', main_cat:'coding', sub_cat:'Cursor', template:'Write comprehensive {test_type} tests for this {language} code using {framework}. Cover: happy path, edge cases, error handling, mocks.\n\nCode:\n{code}', vars:['test_type','language','framework','code'], rating:4.6, uses:1120 },
+  { id:17, title:'LinkedIn Post', title_en:'LinkedIn Post', main_cat:'content', sub_cat:'Sosyal Medya', template:'Write a LinkedIn post about {topic} that drives engagement from {target_audience}.\n\nStructure: powerful hook → story/insight → takeaway → question\nTone: {tone}\nGoal: {goal}', vars:['topic','target_audience','tone','goal'], rating:4.8, uses:2890 },
+  { id:18, title:'Blog Yazısı', title_en:'Blog Post', main_cat:'content', sub_cat:'Blog & SEO', template:'Write a comprehensive blog post about {topic} for {target_audience}.\n\nInclude: SEO title, intro hook, 4+ sections, practical examples, CTA.\nKeyword: {keyword}\nTone: {tone}', vars:['topic','target_audience','keyword','tone'], rating:4.7, uses:1980 },
+  { id:19, title:'Email Kampanya', title_en:'Email Campaign', main_cat:'content', sub_cat:'Email', template:'Write a {email_type} email for {brand}.\n\nTarget: {target}\nGoal: {goal}\nTone: {tone}\n\nInclude: subject line (A/B), preview text, body, CTA.', vars:['email_type','brand','target','goal','tone'], rating:4.7, uses:1670 },
+  { id:20, title:'YouTube Script', title_en:'YouTube Script', main_cat:'content', sub_cat:'Video', template:'Write a YouTube script for a {duration} minute video about {topic}.\n\nChannel style: {channel_style}\nHook (first 30 sec): grab attention immediately\nInclude: B-roll suggestions, transitions, CTA', vars:['duration','topic','channel_style'], rating:4.7, uses:1340 },
+  { id:21, title:'Instagram Caption', title_en:'Instagram Caption', main_cat:'content', sub_cat:'Sosyal Medya', template:'Write an engaging Instagram caption for {content_type} content.\n\nBrand voice: {brand_voice}\nMessage: {message}\n\nInclude: hook, value, CTA, 10-15 relevant hashtags', vars:['content_type','brand_voice','message'], rating:4.6, uses:1450 },
+  { id:22, title:'Pitch Deck', title_en:'Pitch Deck', main_cat:'content', sub_cat:'İş & Sunum', template:'Create a compelling 10-slide pitch deck for {startup} ({sector}).\n\nTarget: {investor_type} investors\nMarket: {market}\n\nFor each slide: title + 3-4 bullet points. Be concise and data-driven.', vars:['startup','sector','investor_type','market'], rating:4.9, uses:1120 },
+  { id:23, title:'SEO Meta Tags', title_en:'SEO Meta Tags', main_cat:'content', sub_cat:'Blog & SEO', template:'Generate SEO meta tags for: {page_title}\n\nMain keyword: {keyword}\nPage type: {page_type}\n\nProvide: title tag (60 chars), meta description (155 chars), OG tags, Twitter card.', vars:['page_title','keyword','page_type'], rating:4.6, uses:990 },
+  { id:24, title:'Ürün Açıklaması', title_en:'Product Description', main_cat:'content', sub_cat:'E-ticaret', template:'Write a compelling product description for {product}.\n\nAudience: {audience}\nFeatures: {features}\nTone: {tone}\n\nFocus on benefits. End with urgency.', vars:['product','audience','features','tone'], rating:4.8, uses:2230 },
+];
+
+// ──────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────
+let lang = 'tr';
+let allPrompts = [];
+let currentUser = null;
+let isAdmin = false;
+let favorites = JSON.parse(localStorage.getItem('pl_favs') || '[]');
+let activeMainCat = 'all';
+let activeSubCats = { visual:'Tümü', coding:'Tümü', content:'Tümü' };
+let currentPrompt = null;
+let searchQ = '';
+let pendingAction = null; // action waiting for auth
+
+// ──────────────────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────────────────
+async function init() {
+  // detect language
+  const navLang = (navigator.language || navigator.userLanguage || 'tr').toLowerCase();
+  lang = navLang.startsWith('tr') ? 'tr' : 'en';
+  applyLang();
+
+  // check for share URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const shareId = urlParams.get('p');
+
+  // auth listener
+  db.auth.onAuthStateChange((_ev, session) => {
+    currentUser = session?.user || null;
+    isAdmin = currentUser?.email === ADMIN_EMAIL;
+    updateAuthUI();
+  });
+
+  // load prompts
+  spin(true);
+  try {
+    const { data, error } = await db.from('prompts').select('*').order('uses', { ascending: false });
+    allPrompts = (data && !error && data.length) ? data : MOCK;
+  } catch(e) { allPrompts = MOCK; }
+  spin(false);
+
+  if (shareId) {
+    const p = allPrompts.find(x => String(x.id) === String(shareId));
+    if (p) { renderSharePage(p); return; }
+  }
+
+  renderAll();
+}
+
+// ──────────────────────────────────────────────────────
+// LANG
+// ──────────────────────────────────────────────────────
+function setLang(l) {
+  lang = l;
+  document.getElementById('langTR').classList.toggle('active', l === 'tr');
+  document.getElementById('langEN').classList.toggle('active', l === 'en');
+  applyLang();
+  renderAll();
+}
+
+function applyLang() {
+  const t = T[lang];
+  document.getElementById('heroBadge').textContent = t.heroBadge;
+  const lines = t.heroTitle.split('\n');
+  document.getElementById('heroTitle').innerHTML = lines[0] + '<br><span class="dim">' + (lines[1]||'') + '</span>';
+  document.getElementById('heroSub').textContent = t.heroSub;
+  document.getElementById('searchInput').placeholder = t.searchPlaceholder;
+  document.getElementById('searchBtn').textContent = t.searchBtn;
+  document.getElementById('statTotalL').textContent = t.statTotal;
+  document.getElementById('statCatL').textContent = t.statCat;
+  document.getElementById('statFavL').textContent = t.statFav;
+  document.getElementById('navAuthLabel').textContent = lang === 'tr' ? 'Giriş Yap' : 'Sign In';
+  document.getElementById('authTitle').textContent = t.authTitle;
+  document.getElementById('authDesc').textContent = t.authDesc;
+  document.getElementById('authSkip').textContent = t.authSkip;
+  document.getElementById('varsHd').textContent = t.varsHd;
+  document.getElementById('shareBtnTxt').textContent = t.share;
+  document.getElementById('closeBtnTxt').textContent = t.close;
+  document.getElementById('copyBtnTxt').textContent = t.copy;
+  document.getElementById('shareBackTxt').textContent = t.shareBack.replace('← ','');
+  document.getElementById('shareLinkTxt').textContent = t.shareLinkTxt;
+  document.getElementById('shareCtaTitle').textContent = t.shareCtaTitle;
+  document.getElementById('shareCtaDesc').textContent = t.shareCtaDesc;
+  document.querySelector('#shareCopyTxt').textContent = t.copy;
+}
+
+function promptTitle(p) { return (lang === 'en' && p.title_en) ? p.title_en : p.title; }
+
+// ──────────────────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────────────────
+function renderAll() {
+  updateStats();
+  renderCatsBar();
+  renderMain();
+}
+
+function renderCatsBar() {
+  const t = T[lang];
+  const cats = [
+    { id:'all', label: t.cats.all },
+    { id:'visual', label: t.cats.visual },
+    { id:'coding', label: t.cats.coding },
+    { id:'content', label: t.cats.content },
+  ];
+  document.getElementById('catsBar').innerHTML = cats.map(c => {
+    const count = c.id === 'all' ? allPrompts.length : allPrompts.filter(p => p.main_cat === c.id).length;
+    return `<div class="cat-pill ${activeMainCat === c.id ? 'active' : ''}" onclick="setMainCat('${c.id}')">
+      <span>${c.label}</span>
+      <span class="cp-count">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderMain() {
+  const t = T[lang];
+  const mc = document.getElementById('mainContent');
+  const cats = activeMainCat === 'all'
+    ? ['visual','coding','content']
+    : [activeMainCat];
+
+  mc.innerHTML = cats.map(cat => {
+    const catPrompts = allPrompts.filter(p => p.main_cat === cat);
+    const subs = ['Tümü', ...new Set(catPrompts.map(p => p.sub_cat).filter(Boolean))];
+    const activeSub = activeSubCats[cat] || 'Tümü';
+    let filtered = catPrompts;
+    if (activeSub !== 'Tümü') filtered = filtered.filter(p => p.sub_cat === activeSub);
+    if (searchQ) filtered = filtered.filter(p =>
+      promptTitle(p).toLowerCase().includes(searchQ) ||
+      (p.template||'').toLowerCase().includes(searchQ)
+    );
+
+    return `
+    <div style="margin-bottom:44px;">
+      <div class="sec-head">
+        <div class="sec-title">
+          <span class="si">${cat==='visual'?'🎨':cat==='coding'?'💻':'✍️'}</span>
+          ${t.cats[cat]}
+        </div>
+      </div>
+      <div class="sub-scroll">
+        ${subs.map(s=>`<button class="stab ${activeSub===s?'active':''}" onclick="setSubCat('${cat}','${s}')">${s}</button>`).join('')}
+      </div>
+      <div class="pgrid">
+        ${filtered.length ? filtered.map(p=>cardHTML(p)).join('') : `<div class="empty">${lang==='tr'?'Prompt bulunamadı.':'No prompts found.'}</div>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(p) {
+  const isFav = favorites.includes(p.id);
+  const title = promptTitle(p);
+  return `
+  <div class="pcard" onclick="openPrompt(${p.id})">
+    <div class="pcard-top">
+      <span class="pcard-sub">${p.sub_cat||''}</span>
+      <div class="pcard-actions">
+        <button class="icon-btn ${isFav?'active':''}" onclick="toggleFav(event,${p.id})" title="${lang==='tr'?'Favori':'Favorite'}">${isFav?'♥':'♡'}</button>
+      </div>
+    </div>
+    <div class="pcard-title">${title}</div>
+    <div class="pcard-prev">${fmtPrev(p.template||'')}</div>
+    <div class="pcard-foot">
+      <div class="pcard-meta">
+        <span>★ ${p.rating||'—'}</span>
+        <span>↗ ${(p.uses||0).toLocaleString('tr')}</span>
+      </div>
+      <button class="copy-pill" id="qc-${p.id}" onclick="qCopy(event,${p.id})">${lang==='tr'?'Kopyala':'Copy'}</button>
+    </div>
+  </div>`;
+}
+
+function fmtPrev(t) {
+  return t.replace(/\{(\w+)\}/g, '<span class="vt">{$1}</span>');
+}
+
+function updateStats() {
+  document.getElementById('statTotal').textContent = allPrompts.length;
+  document.getElementById('statFavs').textContent = favorites.length;
+}
+
+// ──────────────────────────────────────────────────────
+// INTERACTIONS
+// ──────────────────────────────────────────────────────
+function setMainCat(cat) { activeMainCat = cat; renderAll(); }
+function setSubCat(cat, sub) { activeSubCats[cat] = sub; renderMain(); }
+function handleSearch() { searchQ = document.getElementById('searchInput').value.trim().toLowerCase(); renderMain(); }
+
+function toggleFav(e, id) {
+  e.stopPropagation();
+  if (!currentUser) { pendingAction = ()=>toggleFav(e,id); showAuthModal(); return; }
+  if (favorites.includes(id)) favorites = favorites.filter(f=>f!==id);
+  else favorites.push(id);
+  localStorage.setItem('pl_favs', JSON.stringify(favorites));
+  updateStats();
+  renderMain();
+}
+
+// ──────────────────────────────────────────────────────
+// PROMPT MODAL
+// ──────────────────────────────────────────────────────
+function openPrompt(id) {
+  currentPrompt = allPrompts.find(p=>p.id===id);
+  const t = T[lang];
+  const catNames = { visual: T[lang].cats.visual, coding: T[lang].cats.coding, content: T[lang].cats.content };
+  document.getElementById('mCat').textContent = catNames[currentPrompt.main_cat] + (currentPrompt.sub_cat ? ' · '+currentPrompt.sub_cat : '');
+  document.getElementById('mTitle').textContent = promptTitle(currentPrompt);
+  document.getElementById('varsHd').textContent = t.varsHd;
+
+  const vars = currentPrompt.vars || extractVars(currentPrompt.template||'');
+  const wrap = document.getElementById('varsWrap');
+  const grid = document.getElementById('vGrid');
+
+  if (vars.length) {
+    wrap.style.display = 'block';
+    grid.innerHTML = vars.map(v=>`
+      <div class="vf">
+        <label>{${v}}</label>
+        <input type="text" placeholder="${v}..." oninput="updatePOut()" data-var="${v}">
+      </div>`).join('');
+  } else { wrap.style.display = 'none'; }
+
+  updatePOut();
+  document.getElementById('overlay').classList.add('open');
+}
+
+function extractVars(tmpl) {
+  return [...new Set((tmpl.match(/\{(\w+)\}/g)||[]).map(v=>v.slice(1,-1)))];
+}
+
+function updatePOut() {
+  if (!currentPrompt) return;
+  let txt = currentPrompt.template||'';
+  document.querySelectorAll('#vGrid input').forEach(inp=>{
+    const v = inp.dataset.var, val = inp.value.trim();
+    if (val) txt = txt.replace(new RegExp(`\\{${v}\\}`,'g'),`<span class="filled">${val}</span>`);
+  });
+  document.getElementById('pOut').innerHTML = txt.replace(/\n/g,'<br>');
+}
+
+function getRaw() {
+  if (!currentPrompt) return '';
+  let txt = currentPrompt.template||'';
+  document.querySelectorAll('#vGrid input').forEach(inp=>{
+    const v=inp.dataset.var, val=inp.value.trim();
+    if(val) txt=txt.replace(new RegExp(`\\{${v}\\}`,'g'),val);
+  });
+  return txt;
+}
+
+function copyFull() { navigator.clipboard.writeText(getRaw()).then(()=>toast(T[lang].copied)); }
+function closeModal() { document.getElementById('overlay').classList.remove('open'); currentPrompt=null; }
+function overlayClick(e) { if(e.target===document.getElementById('overlay')) closeModal(); }
+
+function qCopy(e,id) {
+  e.stopPropagation();
+  const p = allPrompts.find(x=>x.id===id);
+  navigator.clipboard.writeText(p.template||'').then(()=>{
+    const btn = document.getElementById('qc-'+id);
+    if(btn){btn.textContent=T[lang].copied;btn.classList.add('done');setTimeout(()=>{btn.textContent=lang==='tr'?'Kopyala':'Copy';btn.classList.remove('done');},2000);}
+    toast(T[lang].copied);
+  });
+}
+
+// ──────────────────────────────────────────────────────
+// SHARE
+// ──────────────────────────────────────────────────────
+function sharePrompt() {
+  if (!currentPrompt) return;
+  const url = `${window.location.origin}${window.location.pathname}?p=${currentPrompt.id}`;
+  navigator.clipboard.writeText(url).then(()=>toast(T[lang].shareLinkCopied));
+}
+
+function renderSharePage(p) {
+  document.getElementById('shareTitle').textContent = promptTitle(p);
+  document.getElementById('shareBadge').textContent = (p.sub_cat||'') + ' · promptlibss';
+  const catNames = { visual: T[lang].cats.visual, coding: T[lang].cats.coding, content: T[lang].cats.content };
+  document.getElementById('shareCatTxt').textContent = catNames[p.main_cat]||'';
+  document.getElementById('sharePromptBox').innerHTML = fmtPrev(p.template||'');
+  document.getElementById('sharePage').classList.add('open');
+  window._sharePrompt = p;
+}
+
+function copySharePrompt() {
+  if (window._sharePrompt) navigator.clipboard.writeText(window._sharePrompt.template||'').then(()=>toast(T[lang].copied));
+}
+
+function copyShareLink() {
+  const url = `${window.location.origin}${window.location.pathname}?p=${window._sharePrompt?.id}`;
+  navigator.clipboard.writeText(url).then(()=>toast(T[lang].shareLinkCopied));
+}
+
+function closeSharePage() {
+  document.getElementById('sharePage').classList.remove('open');
+  window.history.replaceState({}, '', window.location.pathname);
+}
+
+function goHome() { closeSharePage(); renderAll(); }
+
+// ──────────────────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────────────────
+function showAuthModal() { document.getElementById('authOverlay').classList.add('open'); }
+function closeAuthModal() { document.getElementById('authOverlay').classList.remove('open'); }
+function authOverlayClick(e) { if(e.target===document.getElementById('authOverlay')) closeAuthModal(); }
+
+async function signInGoogle() {
+  const { error } = await db.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: window.location.href } });
+  if(error) toast('Giriş hatası: '+error.message);
+}
+
+async function signOut() {
+  await db.auth.signOut();
+  currentUser = null; isAdmin = false;
+  updateAuthUI();
+  closeAdmin();
+  toast(lang==='tr'?'Çıkış yapıldı.':'Signed out.');
+}
+
+function updateAuthUI() {
+  const navAuth = document.getElementById('navAuth');
+  const navUser = document.getElementById('navUser');
+  if (currentUser) {
+    navAuth.style.display = 'none';
+    navUser.style.display = 'flex';
+    const av = document.getElementById('userAvatar');
+    if(currentUser.user_metadata?.avatar_url){
+      av.innerHTML=`<img src="${currentUser.user_metadata.avatar_url}" alt="">`;
+    } else {
+      av.textContent = (currentUser.email||'U')[0].toUpperCase();
+    }
+    // execute pending action
+    if(pendingAction){ const fn=pendingAction; pendingAction=null; closeAuthModal(); fn(); }
+    else closeAuthModal();
+  } else {
+    navAuth.style.display = 'flex';
+    navUser.style.display = 'none';
+  }
+  // show admin button if admin
+  const existing = document.getElementById('adminBtn');
+  if(isAdmin && !existing){
+    const btn=document.createElement('button');
+    btn.id='adminBtn'; btn.className='pb'; btn.textContent='⚙ Admin';
+    btn.onclick=openAdmin;
+    document.getElementById('navUser').appendChild(btn);
+  } else if(!isAdmin && existing){ existing.remove(); }
+}
+
+function toggleUserMenu() {
+  if(isAdmin) openAdmin();
+  else { signOut(); }
+}
+
+// ──────────────────────────────────────────────────────
+// ADMIN
+// ──────────────────────────────────────────────────────
+function openAdmin() {
+  if(!isAdmin){ toast(lang==='tr'?'Yetkisiz erişim.':'Unauthorized.'); return; }
+  document.getElementById('adminPanel').classList.add('open');
+  renderAdminStats();
+  renderAdminPrompts();
+}
+
+function closeAdmin() { document.getElementById('adminPanel').classList.remove('open'); }
+
+function renderAdminStats() {
+  const cats = { visual:0, coding:0, content:0 };
+  allPrompts.forEach(p=>{ if(cats[p.main_cat]!==undefined) cats[p.main_cat]++; });
+  document.getElementById('adminStats').innerHTML = `
+    <div class="astat"><div class="astat-n">${allPrompts.length}</div><div class="astat-l">Toplam Prompt</div></div>
+    <div class="astat"><div class="astat-n">${cats.visual}</div><div class="astat-l">Görsel</div></div>
+    <div class="astat"><div class="astat-n">${cats.coding}</div><div class="astat-l">Coding</div></div>
+    <div class="astat"><div class="astat-n">${cats.content}</div><div class="astat-l">İçerik</div></div>
+  `;
+  document.getElementById('pCount').textContent = allPrompts.length;
+}
+
+function renderAdminPrompts() {
+  const list = document.getElementById('adminPromptList');
+  const catLabel = { visual:'🎨', coding:'💻', content:'✍️' };
+  list.innerHTML = allPrompts.map(p=>`
+    <div class="plist-item">
+      <div class="plist-info">
+        <div class="plist-title">${catLabel[p.main_cat]||''} ${p.title}</div>
+        <div class="plist-meta">${p.sub_cat||''} · ${(p.uses||0).toLocaleString('tr')} kullanım · ★ ${p.rating||'—'}</div>
+      </div>
+      <div class="plist-actions">
+        <button class="pb danger" onclick="adminDeletePrompt(${p.id})">Sil</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function adminAddPrompt() {
+  if(!isAdmin) return;
+  const title    = document.getElementById('fTitle').value.trim();
+  const titleEn  = document.getElementById('fTitleEn').value.trim();
+  const mainCat  = document.getElementById('fCat').value;
+  const subCat   = document.getElementById('fSubCat').value.trim();
+  const template = document.getElementById('fTemplate').value.trim();
+  const desc     = document.getElementById('fDesc').value.trim();
+
+  if(!title||!template){ toast('Başlık ve şablon zorunlu!'); return; }
+
+  const vars = extractVars(template);
+  const newPrompt = { title, title_en: titleEn||title, main_cat:mainCat, sub_cat:subCat, template, description:desc, vars, rating:0, uses:0 };
+
+  spin(true);
+  try {
+    const { data, error } = await db.from('prompts').insert([newPrompt]).select();
+    if(!error && data?.length){ allPrompts.unshift(data[0]); }
+    else { allPrompts.unshift({...newPrompt, id: Date.now()}); } // fallback
+  } catch(e){ allPrompts.unshift({...newPrompt, id: Date.now()}); }
+  spin(false);
+
+  ['fTitle','fTitleEn','fSubCat','fTemplate','fDesc'].forEach(id=>document.getElementById(id).value='');
+  renderAdminStats();
+  renderAdminPrompts();
+  renderAll();
+  toast(lang==='tr'?'Prompt eklendi ✓':'Prompt added ✓');
+}
+
+async function adminDeletePrompt(id) {
+  if(!isAdmin) return;
+  if(!confirm(lang==='tr'?'Silmek istediğinden emin misin?':'Are you sure?')) return;
+  spin(true);
+  try { await db.from('prompts').delete().eq('id', id); } catch(e){}
+  allPrompts = allPrompts.filter(p=>p.id!==id);
+  spin(false);
+  renderAdminStats();
+  renderAdminPrompts();
+  renderAll();
+  toast(lang==='tr'?'Silindi.':'Deleted.');
+}
+
+// ──────────────────────────────────────────────────────
+// UTILS
+// ──────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+function spin(on) { document.getElementById('spinOverlay').classList.toggle('show', on); }
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeModal(); closeAuthModal(); } });
+
+// ──────────────────────────────────────────────────────
+// SUPABASE SQL (Admin'den çalıştır)
+// ──────────────────────────────────────────────────────
+/*
+-- Prompts tablosu
+create table prompts (
+  id bigserial primary key,
+  title text not null,
+  title_en text,
+  template text not null,
+  main_cat text not null check (main_cat in ('visual','coding','content')),
+  sub_cat text,
+  description text,
+  vars text[],
+  rating numeric default 0,
+  uses integer default 0,
+  created_at timestamptz default now()
+);
+
+-- Herkes okuyabilir
+create policy "Public read" on prompts for select using (true);
+
+-- Sadece admin email yazabilir/silebilir
+create policy "Admin write" on prompts for all
+  using (auth.email() = 'kaptaneren56@gmail.com')
+  with check (auth.email() = 'kaptaneren56@gmail.com');
+
+alter table prompts enable row level security;
+*/
+
+init();
+</script>
+</body>
+</html>
